@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRP - Financial ERP Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .stat-value.positive {
+            color: #10b981;
+        }
+
+        .stat-value.negative {
+            color: #ef4444;
+        }
+
+        .stat-value.balanced {
+            color: #10b981;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .line-entry {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .line-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .line-number {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .remove-line {
+            background: #ef4444;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-top: 0;
+        }
+
+        .add-line {
+            background: #10b981;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .table th {
+            background: #f9fafb;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table tr:hover {
+            background: #f9fafb;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #efe;
+            color: #070;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .amount-debit {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .amount-credit {
+            color: #ef4444;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 AIRP - Financial ERP</h1>
+            <p class="subtitle">AI-native Accounting & Reporting Platform (SQLite Demo)</p>
+        </header>
+
+        <div class="grid">
+            <!-- Health Status -->
+            <div class="card">
+                <h2>System Status</h2>
+                <div id="health-status" class="loading">Loading...</div>
+            </div>
+
+            <!-- Trial Balance Summary -->
+            <div class="card">
+                <h2>Trial Balance Summary</h2>
+                <div id="tb-summary" class="loading">Loading...</div>
+            </div>
+
+            <!-- P&L Summary -->
+            <div class="card">
+                <h2>Income Statement</h2>
+                <div id="is-summary" class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Create Journal Form -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>Create New Journal Entry</h2>
+            <form id="journal-form">
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="description" required placeholder="e.g., Monthly rent payment">
+                </div>
+
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="journalDate" required value="2025-10-15">
+                </div>
+
+                <div id="lines-container">
+                    <div class="line-entry" data-line="1">
+                        <div class="line-header">
+                            <span class="line-number">Line 1</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Account</label>
+                            <select class="line-account" required>
+                                <option value="">Select account...</option>
+                            </select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Debit</label>
+                                <input type="number" class="line-debit" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Credit</label>
+                                <input type="number" class="line-credit" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="line-entry" data-line="2">
+                        <div class="line-header">
+                            <span class="line-number">Line 2</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Account</label>
+                            <select class="line-account" required>
+                                <option value="">Select account...</option>
+                            </select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Debit</label>
+                                <input type="number" class="line-debit" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Credit</label>
+                                <input type="number" class="line-credit" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit">Create Journal (Draft)</button>
+                <div id="journal-message"></div>
+            </form>
+        </div>
+
+        <!-- Trial Balance Detail -->
+        <div class="card">
+            <h2>Trial Balance Detail</h2>
+            <div id="trial-balance" class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001';
+        const ENTITY_ID = 'cmgse2ohw0007u3ul72swgakn';
+        const BOOK_ID = 'cmgse2oi10009u3ulid8q3lra';
+
+        let accounts = [];
+
+        // Load initial data
+        async function loadData() {
+            try {
+                await loadAccounts();
+                await loadHealth();
+                await loadTrialBalance();
+                await loadIncomeStatement();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        async function loadAccounts() {
+            // For now, hardcode accounts - in production this would be an API call
+            accounts = [
+                { id: 'cmgse2oij000hu3ul3jk7dlok', code: '1110', name: 'Cash and Cash Equivalents', type: 'ASSET' },
+                { id: 'cmgse2oip000ju3ulwovbu0uq', code: '1120', name: 'Accounts Receivable', type: 'ASSET' },
+                { id: 'cmgse2oj4000pu3uljqu5js02', code: '2110', name: 'Accounts Payable', type: 'LIABILITY' },
+                { id: 'cmgse2oje000tu3ulagu8ptin', code: '3100', name: 'Retained Earnings', type: 'EQUITY' },
+                { id: 'cmgse2ojn000xu3ulnlez7rnv', code: '4100', name: 'Product Revenue', type: 'REVENUE' },
+                { id: 'cmgse2ojv0011u3ulj55m5y3k', code: '5100', name: 'Salaries and Wages', type: 'EXPENSE' },
+                { id: 'cmgse2ojz0013u3ulelx4yxg3', code: '5200', name: 'Rent Expense', type: 'EXPENSE' }
+            ];
+
+            // Populate account selects
+            document.querySelectorAll('.line-account').forEach(select => {
+                accounts.forEach(acc => {
+                    const option = document.createElement('option');
+                    option.value = acc.id;
+                    option.textContent = `${acc.code} - ${acc.name}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        async function loadHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+
+                const html = `
+                    <div class="stat">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value positive">✓ ${data.status}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Database</span>
+                        <span class="stat-value">${data.database.connected ? '✓ Connected' : '✗ Disconnected'}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Workspaces</span>
+                        <span class="stat-value">${data.database.workspaces}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Journals</span>
+                        <span class="stat-value">${data.database.journals}</span>
+                    </div>
+                `;
+
+                document.getElementById('health-status').innerHTML = html;
+            } catch (error) {
+                document.getElementById('health-status').innerHTML = '<div class="error">Failed to load health status</div>';
+            }
+        }
+
+        async function loadTrialBalance() {
+            try {
+                const response = await fetch(`${API_BASE}/api/reports/trial-balance?entityId=${ENTITY_ID}&bookId=${BOOK_ID}`);
+                const result = await response.json();
+                const data = result.data;
+
+                // Summary
+                const summaryHtml = `
+                    <div class="stat">
+                        <span class="stat-label">Total Debits</span>
+                        <span class="stat-value amount-debit">$${data.totalDebits.toLocaleString()}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Total Credits</span>
+                        <span class="stat-value amount-credit">$${data.totalCredits.toLocaleString()}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Balanced</span>
+                        <span class="stat-value ${data.isBalanced ? 'balanced' : 'negative'}">
+                            ${data.isBalanced ? '✓ YES' : '✗ NO'}
+                        </span>
+                    </div>
+                `;
+                document.getElementById('tb-summary').innerHTML = summaryHtml;
+
+                // Detail table
+                const tableHtml = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th style="text-align: right;">Debit</th>
+                                <th style="text-align: right;">Credit</th>
+                                <th style="text-align: right;">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.rows.map(row => `
+                                <tr>
+                                    <td>${row.accountCode} - ${row.accountName}</td>
+                                    <td style="text-align: right;" class="amount-debit">$${row.debit.toLocaleString()}</td>
+                                    <td style="text-align: right;" class="amount-credit">$${row.credit.toLocaleString()}</td>
+                                    <td style="text-align: right;">$${Math.abs(row.balance).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                            <tr style="font-weight: 600; background: #f9fafb;">
+                                <td>TOTAL</td>
+                                <td style="text-align: right;" class="amount-debit">$${data.totalDebits.toLocaleString()}</td>
+                                <td style="text-align: right;" class="amount-credit">$${data.totalCredits.toLocaleString()}</td>
+                                <td style="text-align: right;">${data.isBalanced ? '✓ Balanced' : '✗ Unbalanced'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById('trial-balance').innerHTML = tableHtml;
+            } catch (error) {
+                document.getElementById('trial-balance').innerHTML = '<div class="error">Failed to load trial balance</div>';
+            }
+        }
+
+        async function loadIncomeStatement() {
+            try {
+                const response = await fetch(`${API_BASE}/api/reports/income-statement?entityId=${ENTITY_ID}&bookId=${BOOK_ID}`);
+                const result = await response.json();
+                const data = result.data;
+
+                const html = `
+                    <div class="stat">
+                        <span class="stat-label">Total Revenue</span>
+                        <span class="stat-value positive">$${data.totalRevenue.toLocaleString()}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Total Expenses</span>
+                        <span class="stat-value negative">$${data.totalExpenses.toLocaleString()}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Net Income</span>
+                        <span class="stat-value ${data.netIncome >= 0 ? 'positive' : 'negative'}">
+                            $${data.netIncome.toLocaleString()}
+                        </span>
+                    </div>
+                `;
+
+                document.getElementById('is-summary').innerHTML = html;
+            } catch (error) {
+                document.getElementById('is-summary').innerHTML = '<div class="error">Failed to load income statement</div>';
+            }
+        }
+
+        // Handle journal form submission
+        document.getElementById('journal-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const messageDiv = document.getElementById('journal-message');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            try {
+                submitBtn.disabled = true;
+                messageDiv.innerHTML = '<div class="loading">Creating journal...</div>';
+
+                // Collect line data
+                const lines = [];
+                document.querySelectorAll('.line-entry').forEach((lineDiv, index) => {
+                    const accountId = lineDiv.querySelector('.line-account').value;
+                    const debit = parseFloat(lineDiv.querySelector('.line-debit').value) || 0;
+                    const credit = parseFloat(lineDiv.querySelector('.line-credit').value) || 0;
+
+                    if (accountId && (debit > 0 || credit > 0)) {
+                        lines.push({
+                            lineNumber: index + 1,
+                            accountId,
+                            debit,
+                            credit
+                        });
+                    }
+                });
+
+                const journalData = {
+                    entityId: ENTITY_ID,
+                    bookIds: [BOOK_ID],
+                    journalDate: document.getElementById('journalDate').value,
+                    description: document.getElementById('description').value,
+                    lines
+                };
+
+                const response = await fetch(`${API_BASE}/api/ledger/journals`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(journalData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.innerHTML = `<div class="success">✓ Journal created: ${result.data.journalNumber}<br>Now posting...</div>`;
+
+                    // Auto-post
+                    const postResponse = await fetch(`${API_BASE}/api/ledger/journals/${result.data.journalId}/post`, {
+                        method: 'POST'
+                    });
+
+                    const postResult = await postResponse.json();
+
+                    if (postResult.success) {
+                        messageDiv.innerHTML = `<div class="success">✓ Journal ${result.data.journalNumber} created and posted!</div>`;
+                        // Refresh data
+                        setTimeout(() => {
+                            loadData();
+                            e.target.reset();
+                            messageDiv.innerHTML = '';
+                        }, 2000);
+                    } else {
+                        messageDiv.innerHTML = `<div class="error">Journal created but posting failed: ${postResult.errors[0].message}</div>`;
+                    }
+                } else {
+                    messageDiv.innerHTML = `<div class="error">Error: ${result.errors[0].message}</div>`;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="error">Failed to create journal: ${error.message}</div>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize
+        loadData();
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadData, 10000);
+    </script>
+</body>
+</html>

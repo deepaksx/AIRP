@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsx get-ids.ts)",
+      "Bash(pnpm tsx ../../get-ids.ts)",
+      "Bash(curl \"http://localhost:3001/api/reports/trial-balance?entityId=cmgse2ohw0007u3ul72swgakn&bookId=cmgse2oi10009u3ulid8q3lra\")",
+      "Bash(curl -X POST http://localhost:3001/api/ledger/journals -H \"Content-Type: application/json\" -d \"@test-journal.json\")",
+      "Bash(curl -X POST http://localhost:3001/api/ledger/journals/cmgsem6jg00027adj00r55dpo/post)",
+      "Bash(curl -X POST http://localhost:3001/api/ledger/journals -H \"Content-Type: application/json\" -d \"@test-revenue.json\")",
+      "Bash(curl -X POST http://localhost:3001/api/ledger/journals/cmgser52r000e7adjxtbuwcqq/post)",
+      "Bash(curl -X POST http://localhost:3001/api/ledger/journals -H \"Content-Type: application/json\" -d \"@test-small-revenue.json\")",
+      "Bash(curl -X POST http://localhost:3001/api/ledger/journals/cmgses2ng000n7adjd2bcoz5o/post)",
+      "Bash(curl \"http://localhost:3001/api/reports/income-statement?entityId=cmgse2ohw0007u3ul72swgakn&bookId=cmgse2oi10009u3ulid8q3lra\")",
+      "Bash(npx create-next-app@latest web --typescript --tailwind --app --no-src-dir --import-alias \"@/*\" --use-pnpm)",
+      "Bash(pnpm dev)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

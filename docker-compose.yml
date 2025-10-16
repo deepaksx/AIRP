@@ -1,0 +1,99 @@
+version: '3.9'
+
+services:
+  # PostgreSQL with TimescaleDB for time-series partitioning
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: airp-postgres
+    environment:
+      POSTGRES_DB: airp
+      POSTGRES_USER: airp
+      POSTGRES_PASSWORD: airp_dev
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/docker/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redpanda (Kafka-compatible, lighter weight)
+  redpanda:
+    image: docker.redpanda.com/vectorized/redpanda:v24.1.1
+    container_name: airp-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+    ports:
+      - "19092:19092"
+      - "18081:18081"
+      - "18082:18082"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  # Temporal (workflow orchestration)
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: airp-temporal
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=airp
+      - POSTGRES_PWD=airp_dev
+      - POSTGRES_SEEDS=postgres
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./infra/docker/temporal-dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  # Temporal Web UI
+  temporal-ui:
+    image: temporalio/ui:2.28.0
+    container_name: airp-temporal-ui
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    ports:
+      - "8233:8233"
+    depends_on:
+      - temporal
+
+  # Redis (for caching and rate limiting)
+  redis:
+    image: redis:7-alpine
+    container_name: airp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres-data:
+  redpanda-data:
+  redis-data:

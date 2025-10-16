@@ -1,0 +1,20 @@
+{
+  "entityId": "cmgse2ohw0007u3ul72swgakn",
+  "bookIds": ["cmgse2oi10009u3ulid8q3lra"],
+  "journalDate": "2025-10-15",
+  "description": "Test expense entry - Office rent",
+  "lines": [
+    {
+      "lineNumber": 1,
+      "accountId": "cmgse2ojz0013u3ulelx4yxg3",
+      "debit": 5000,
+      "credit": 0
+    },
+    {
+      "lineNumber": 2,
+      "accountId": "cmgse2oij000hu3ul3jk7dlok",
+      "debit": 0,
+      "credit": 5000
+    }
+  ]
+}

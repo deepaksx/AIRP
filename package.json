@@ -1,0 +1,35 @@
+{
+  "name": "airp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-native financial ERP with NextDay Migration and unified append-only ledger",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/airp"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "pnpm --filter @airp/api dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "test:api": "pnpm --filter @airp/core test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @airp/db generate",
+    "db:migrate": "pnpm --filter @airp/db migrate:dev",
+    "db:seed": "pnpm --filter @airp/db seed",
+    "get-test-ids": "tsx scripts/get-test-ids.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.6.3"
+  }
+}

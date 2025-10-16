@@ -1,0 +1,22 @@
+{
+  "entityId": "cmgse2ohw0007u3ul72swgakn",
+  "bookIds": ["cmgse2oi10009u3ulid8q3lra"],
+  "journalDate": "2025-10-15",
+  "description": "Small product sale",
+  "lines": [
+    {
+      "lineNumber": 1,
+      "accountId": "cmgse2oij000hu3ul3jk7dlok",
+      "debit": 8000,
+      "credit": 0,
+      "description": "Cash received"
+    },
+    {
+      "lineNumber": 2,
+      "accountId": "cmgse2ojn000xu3ulnlez7rnv",
+      "debit": 0,
+      "credit": 8000,
+      "description": "Revenue"
+    }
+  ]
+}

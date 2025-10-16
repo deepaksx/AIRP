@@ -1,0 +1,294 @@
+// AIRP - SQLite Version (Simplified)
+// This is a stripped-down version for testing without Docker
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// WORKSPACE & TENANCY
+// ============================================================================
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  planTier    String   @default("BASE") // Was enum
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entities    Entity[]
+  users       WorkspaceUser[]
+  roles       Role[]
+  auditLogs   AuditLog[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceUser {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  email       String
+  name        String?
+  role        String
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@map("workspace_users")
+}
+
+// ============================================================================
+// ENTITIES & LEDGER BOOKS
+// ============================================================================
+
+model Entity {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  code             String
+  name             String
+  legalName        String?
+  taxId            String?
+  baseCurrencyCode String   @default("USD")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace        Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  baseCurrency     Currency       @relation(fields: [baseCurrencyCode], references: [code])
+  books            LedgerBook[]
+  accounts         Account[]
+  journals         Journal[]
+
+  @@unique([workspaceId, code])
+  @@map("entities")
+}
+
+model LedgerBook {
+  id          String   @id @default(cuid())
+  entityId    String
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  entity       Entity        @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  journalLines JournalLine[]
+
+  @@unique([entityId, code])
+  @@map("ledger_books")
+}
+
+// ============================================================================
+// CHART OF ACCOUNTS
+// ============================================================================
+
+model Account {
+  id           String   @id @default(cuid())
+  entityId     String
+  code         String
+  name         String
+  type         String   // Was enum: "ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE", "COGS"
+  subtype      String?
+  parentId     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  entity       Entity        @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  parent       Account?      @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children     Account[]     @relation("AccountHierarchy")
+  journalLines JournalLine[]
+
+  @@unique([entityId, code])
+  @@index([entityId, type])
+  @@map("accounts")
+}
+
+// ============================================================================
+// CURRENCIES & FX
+// ============================================================================
+
+model Currency {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  symbol      String
+  decimals    Int      @default(2)
+  isActive    Boolean  @default(true)
+
+  entities    Entity[]
+  fxRatesFrom FxRate[] @relation("FromCurrency")
+  fxRatesTo   FxRate[] @relation("ToCurrency")
+
+  @@map("currencies")
+}
+
+model FxRate {
+  id           String   @id @default(cuid())
+  fromCurrency String
+  toCurrency   String
+  rate         Float    // Was Decimal
+  rateDate     DateTime
+  rateType     String   @default("SPOT") // Was enum
+  source       String?
+  createdAt    DateTime @default(now())
+
+  from         Currency @relation("FromCurrency", fields: [fromCurrency], references: [code])
+  to           Currency @relation("ToCurrency", fields: [toCurrency], references: [code])
+
+  @@unique([fromCurrency, toCurrency, rateDate, rateType])
+  @@index([fromCurrency, toCurrency, rateDate])
+  @@map("fx_rates")
+}
+
+// ============================================================================
+// UNIFIED LEDGER - JOURNALS (APPEND-ONLY)
+// ============================================================================
+
+model Journal {
+  id              String    @id @default(cuid())
+  entityId        String
+  journalNumber   String
+  journalDate     DateTime
+  period          String
+  journalType     String    @default("STANDARD") // Was enum
+  description     String
+  reference       String?
+  source          String
+  sourceId        String?
+  status          String    @default("DRAFT") // Was enum
+  postedAt        DateTime?
+  postedBy        String?
+  reversalOfId    String?   @unique // Made unique for SQLite
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  entity          Entity        @relation(fields: [entityId], references: [id])
+  reversalOf      Journal?      @relation("JournalReversal", fields: [reversalOfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reversedBy      Journal?      @relation("JournalReversal")
+  lines           JournalLine[]
+
+  @@unique([entityId, journalNumber])
+  @@index([entityId, period])
+  @@index([entityId, journalDate])
+  @@map("journals")
+}
+
+// Core immutable ledger - append-only journal lines
+model JournalLine {
+  id                String   @id @default(cuid())
+  journalId         String
+  lineNumber        Int
+  bookId            String
+  accountId         String
+  debit             Float    // Was Decimal
+  credit            Float    // Was Decimal
+
+  // Multi-currency support
+  currencyCode      String
+  amountOriginal    Float    // Was Decimal
+  fxRate            Float?   // Was Decimal
+
+  // Simplified dimensions (no JSON in SQLite)
+  dimensionDept     String?
+  dimensionProject  String?
+  dimensionCustomer String?
+
+  // Subledger linkage
+  subledgerType     String?
+  subledgerId       String?
+
+  // Metadata
+  description       String?
+  reference         String?
+
+  // Immutable timestamp
+  createdAt         DateTime @default(now())
+
+  journal           Journal     @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  book              LedgerBook  @relation(fields: [bookId], references: [id])
+  account           Account     @relation(fields: [accountId], references: [id])
+
+  @@index([journalId, lineNumber])
+  @@index([bookId, accountId])
+  @@index([accountId, createdAt])
+  @@map("journal_lines")
+}
+
+// ============================================================================
+// AUDIT LOG (SIMPLIFIED)
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  entityId    String?
+  userId      String
+  action      String
+  resourceType String
+  resourceId  String
+  oldValues   String?  // JSON as String
+  newValues   String?  // JSON as String
+  timestamp   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, resourceType, resourceId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// SIMPLIFIED SUBLEDGERS
+// ============================================================================
+
+model Vendor {
+  id          String   @id @default(cuid())
+  workspaceId String
+  code        String
+  name        String
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, code])
+  @@map("vendors")
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  workspaceId String
+  code        String
+  name        String
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, code])
+  @@map("customers")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  permissions String   // JSON as String
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name])
+  @@map("roles")
+}

@@ -1,0 +1,199 @@
+{
+  "info": {
+    "name": "AIRP API Collection",
+    "description": "Complete API collection for AIRP Financial ERP",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "entityId",
+      "value": "cmgse2ohw0007u3ul72swgakn",
+      "type": "string"
+    },
+    {
+      "key": "bookId",
+      "value": "cmgse2oi10009u3ulid8q3lra",
+      "type": "string"
+    },
+    {
+      "key": "cashAccountId",
+      "value": "cmgse2oij000hu3ul3jk7dlok",
+      "type": "string"
+    },
+    {
+      "key": "rentAccountId",
+      "value": "cmgse2ojz0013u3ulelx4yxg3",
+      "type": "string"
+    },
+    {
+      "key": "revenueAccountId",
+      "value": "cmgse2ojn000xu3ulnlez7rnv",
+      "type": "string"
+    },
+    {
+      "key": "salaryAccountId",
+      "value": "cmgse2ojv0011u3ulj55m5y3k",
+      "type": "string"
+    },
+    {
+      "key": "journalId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Create Journal - Expense",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.success && jsonData.data.journalId) {",
+              "        pm.collectionVariables.set('journalId', jsonData.data.journalId);",
+              "        console.log('Journal ID saved: ' + jsonData.data.journalId);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entityId\": \"{{entityId}}\",\n  \"bookIds\": [\"{{bookId}}\"],\n  \"journalDate\": \"2025-10-15\",\n  \"description\": \"Office rent payment\",\n  \"lines\": [\n    {\n      \"lineNumber\": 1,\n      \"accountId\": \"{{rentAccountId}}\",\n      \"debit\": 3000,\n      \"credit\": 0,\n      \"description\": \"Monthly rent\"\n    },\n    {\n      \"lineNumber\": 2,\n      \"accountId\": \"{{cashAccountId}}\",\n      \"debit\": 0,\n      \"credit\": 3000,\n      \"description\": \"Cash payment\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ledger/journals",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ledger", "journals"]
+        }
+      }
+    },
+    {
+      "name": "Post Journal",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/ledger/journals/{{journalId}}/post",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ledger", "journals", "{{journalId}}", "post"]
+        }
+      }
+    },
+    {
+      "name": "Create Journal - Revenue",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entityId\": \"{{entityId}}\",\n  \"bookIds\": [\"{{bookId}}\"],\n  \"journalDate\": \"2025-10-15\",\n  \"description\": \"Product sales\",\n  \"lines\": [\n    {\n      \"lineNumber\": 1,\n      \"accountId\": \"{{cashAccountId}}\",\n      \"debit\": 5000,\n      \"credit\": 0,\n      \"description\": \"Cash received\"\n    },\n    {\n      \"lineNumber\": 2,\n      \"accountId\": \"{{revenueAccountId}}\",\n      \"debit\": 0,\n      \"credit\": 5000,\n      \"description\": \"Product revenue\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ledger/journals",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ledger", "journals"]
+        }
+      }
+    },
+    {
+      "name": "Trial Balance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/reports/trial-balance?entityId={{entityId}}&bookId={{bookId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "reports", "trial-balance"],
+          "query": [
+            {
+              "key": "entityId",
+              "value": "{{entityId}}"
+            },
+            {
+              "key": "bookId",
+              "value": "{{bookId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Income Statement",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/reports/income-statement?entityId={{entityId}}&bookId={{bookId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "reports", "income-statement"],
+          "query": [
+            {
+              "key": "entityId",
+              "value": "{{entityId}}"
+            },
+            {
+              "key": "bookId",
+              "value": "{{bookId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Balance Sheet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/reports/balance-sheet?entityId={{entityId}}&bookId={{bookId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "reports", "balance-sheet"],
+          "query": [
+            {
+              "key": "entityId",
+              "value": "{{entityId}}"
+            },
+            {
+              "key": "bookId",
+              "value": "{{bookId}}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
