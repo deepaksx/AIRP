@@ -1,6 +1,6 @@
 {
   "name": "airp",
-  "version": "0.1.0",
+  "version": "2.0.0-alpha",
   "private": true,
   "description": "AI-native financial ERP with NextDay Migration and unified append-only ledger",
   "repository": {
